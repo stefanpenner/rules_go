@@ -54,10 +54,10 @@ def _should_use_sdk_stdlib(go):
 def _build_stdlib_list_json(go):
     out = go.declare_file(go, "stdlib.pkg.json")
     args = go.builder_args(go, "stdliblist")
-    args.add("-sdk", go.sdk.root_file.dirname)
+    args.add_all([go.sdk.root_file], before_each = "-sdk", map_each = _dirname)
     args.add("-out", out)
     go.actions.run(
-        inputs = go.sdk_files,
+        inputs = go.sdk_files + [go.sdk.root_file],
         outputs = [out],
         mnemonic = "GoStdlibList",
         executable = go.toolchain._builder,
@@ -73,10 +73,13 @@ def _sdk_stdlib(go):
         root_file = go.sdk.root_file,
     )
 
+def _dirname(file):
+    return file.dirname
+
 def _build_stdlib(go):
     pkg = go.declare_directory(go, path = "pkg")
     args = go.builder_args(go, "stdlib")
-    args.add("-out", pkg.dirname)
+    args.add_all([pkg], before_each = "-out", map_each = _dirname, expand_directories = False)
     if go.mode.race:
         args.add("-race")
     args.add_all(link_mode_args(go.mode))

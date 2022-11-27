@@ -44,6 +44,8 @@ var (
 // See ./README.rst for more information about handling arguments and
 // environment variables.
 type env struct {
+	goroot string
+
 	// sdk is the path to the Go SDK, which contains tools for the host
 	// platform. This may be different than GOROOT.
 	sdk string
@@ -66,6 +68,7 @@ type env struct {
 // configured with those flags.
 func envFlags(flags *flag.FlagSet) *env {
 	env := &env{}
+	flags.StringVar(&env.goroot, "goroot", "", "Value to set for GOROOT")
 	flags.StringVar(&env.sdk, "sdk", "", "Path to the Go SDK.")
 	flags.Var(&tagFlag{}, "tags", "List of build tags considered true.")
 	flags.StringVar(&env.installSuffix, "installsuffix", "", "Standard library under GOROOT/pkg")
@@ -136,7 +139,10 @@ func (e *env) runCommand(args []string) error {
 	buf := &bytes.Buffer{}
 	cmd.Stdout = buf
 	cmd.Stderr = buf
-	err := runAndLogCommand(cmd, e.verbose)
+	if e.goroot != "" {
+		cmd.Env = append(os.Environ(), "GOROOT="+e.goroot)
+	}
+	err := e.runAndLogCommand(cmd)
 	os.Stderr.Write(relativizePaths(buf.Bytes()))
 	return err
 }
@@ -147,7 +153,10 @@ func (e *env) runCommandToFile(out, err io.Writer, args []string) error {
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdout = out
 	cmd.Stderr = err
-	return runAndLogCommand(cmd, e.verbose)
+	if e.goroot != "" {
+		cmd.Env = append(os.Environ(), "GOROOT="+e.goroot)
+	}
+	return e.runAndLogCommand(cmd)
 }
 
 func absEnv(envNameList []string, argList []string) error {
@@ -161,8 +170,11 @@ func absEnv(envNameList []string, argList []string) error {
 	return nil
 }
 
-func runAndLogCommand(cmd *exec.Cmd, verbose bool) error {
-	if verbose {
+func (e *env) runAndLogCommand(cmd *exec.Cmd) error {
+	if e.goroot != "" {
+		cmd.Env = append(cmd.Env, "GOROOT="+e.goroot)
+	}
+	if e.verbose {
 		fmt.Fprintln(os.Stderr, formatCommand(cmd))
 	}
 	cleanup := passLongArgsInResponseFiles(cmd)

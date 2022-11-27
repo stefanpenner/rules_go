@@ -372,7 +372,7 @@ func compileArchive(
 	}
 
 	// Build an importcfg file for the compiler.
-	importcfgPath, err := buildImportcfgFileForCompile(imports, goenv.installSuffix, filepath.Dir(outPath))
+	importcfgPath, err := buildImportcfgFileForCompile(imports, goenv.goroot, goenv.installSuffix, filepath.Dir(outPath))
 	if err != nil {
 		return err
 	}
@@ -467,7 +467,7 @@ func compileArchive(
 	// Compile the .s files.
 	if len(srcs.sSrcs) > 0 {
 		includeSet := map[string]struct{}{
-			filepath.Join(os.Getenv("GOROOT"), "pkg", "include"): {},
+			filepath.Join(goenv.goroot, "pkg", "include"): {},
 			workDir: {},
 		}
 		for _, hdr := range srcs.hSrcs {

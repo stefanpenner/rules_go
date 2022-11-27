@@ -77,7 +77,7 @@ func buildSymabisFile(goenv *env, sFiles, hFiles []fileInfo, asmhdr string) (str
 	asmargs := goenv.goTool("asm")
 	asmargs = append(asmargs, "-trimpath", wd)
 	asmargs = append(asmargs, "-I", wd)
-	asmargs = append(asmargs, "-I", filepath.Join(os.Getenv("GOROOT"), "pkg", "include"))
+	asmargs = append(asmargs, "-I", filepath.Join(goenv.goroot, "pkg", "include"))
 	asmargs = append(asmargs, "-I", asmhdrDir)
 	seenHdrDirs := map[string]bool{wd: true, asmhdrDir: true}
 	for _, hFile := range hFiles {

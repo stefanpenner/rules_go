@@ -199,7 +199,7 @@ func stdliblist(args []string) error {
 		absPaths = append(absPaths, abs(path))
 	}
 	os.Setenv("PATH", strings.Join(absPaths, string(os.PathListSeparator)))
-	os.Setenv("GOROOT", newGoRoot)
+	goenv.goroot = newGoRoot
 	// Make sure we have an absolute path to the C compiler.
 	// TODO(#1357): also take absolute paths of includes and other paths in flags.
 	os.Setenv("CC", abs(os.Getenv("CC")))

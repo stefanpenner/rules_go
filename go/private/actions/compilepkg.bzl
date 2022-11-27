@@ -39,6 +39,9 @@ def _embedlookupdir_arg(src):
         root_relative = root_relative[len("/"):]
     return root_relative
 
+def _dirname(file):
+    return file.dirname
+
 def emit_compilepkg(
         go,
         sources = None,

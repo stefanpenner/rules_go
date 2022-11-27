@@ -145,13 +145,17 @@ def _new_args(go):
     # TODO(jayconrod): print warning.
     return go.builder_args(go)
 
+def _dirname(file):
+    return file.dirname
+
 def _builder_args(go, command = None):
     args = go.actions.args()
     args.use_param_file("-param=%s")
     args.set_param_file_format("shell")
     if command:
         args.add(command)
-    args.add("-sdk", go.sdk.root_file.dirname)
+    args.add_all([go.sdk.root_file], before_each = "-sdk", map_each = _dirname, expand_directories = False)
+    args.add_all([go.sdk_root], before_each = "-goroot", map_each = _dirname, expand_directories = False)
     args.add("-installsuffix", installsuffix(go.mode))
     args.add_joined("-tags", go.tags, join_with = ",")
     return args
@@ -413,14 +417,14 @@ def go_context(ctx, attr = None):
     binary = toolchain.sdk.go
 
     if stdlib:
-        goroot = stdlib.root_file.dirname
+        root_file = stdlib.root_file
     else:
-        goroot = toolchain.sdk.root_file.dirname
+        root_file = toolchain.sdk.root_file
+    goroot = root_file.dirname
 
     env = {
         "GOARCH": mode.goarch,
         "GOOS": mode.goos,
-        "GOROOT": goroot,
         "GOROOT_FINAL": "GOROOT",
         "CGO_ENABLED": "0" if mode.pure else "1",
 
@@ -494,7 +498,7 @@ def go_context(ctx, attr = None):
         root = goroot,
         go = binary,
         stdlib = stdlib,
-        sdk_root = toolchain.sdk.root_file,
+        sdk_root = root_file,
         sdk_files = sdk_files,
         sdk_tools = toolchain.sdk.tools,
         actions = ctx.actions,

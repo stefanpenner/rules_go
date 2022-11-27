@@ -103,11 +103,10 @@ func checkImports(files []fileInfo, archives []archive, stdPackageListPath strin
 // buildImportcfgFileForCompile writes an importcfg file to be consumed by the
 // compiler. The file is constructed from direct dependencies and std imports.
 // The caller is responsible for deleting the importcfg file.
-func buildImportcfgFileForCompile(imports map[string]*archive, installSuffix, dir string) (string, error) {
+func buildImportcfgFileForCompile(imports map[string]*archive, goroot, installSuffix, dir string) (string, error) {
 	buf := &bytes.Buffer{}
-	goroot, ok := os.LookupEnv("GOROOT")
-	if !ok {
-		return "", errors.New("GOROOT not set")
+	if goroot == "" {
+		return "", errors.New("-goroot not provided")
 	}
 	goroot = abs(goroot)
 
@@ -147,11 +146,10 @@ func buildImportcfgFileForCompile(imports map[string]*archive, installSuffix, di
 	return filename, nil
 }
 
-func buildImportcfgFileForLink(archives []archive, stdPackageListPath, installSuffix, dir string) (string, error) {
+func buildImportcfgFileForLink(archives []archive, goroot, stdPackageListPath, installSuffix, dir string) (string, error) {
 	buf := &bytes.Buffer{}
-	goroot, ok := os.LookupEnv("GOROOT")
-	if !ok {
-		return "", errors.New("GOROOT not set")
+	if goroot == "" {
+		return "", errors.New("-goroot not provided")
 	}
 	prefix := abs(filepath.Join(goroot, "pkg", installSuffix))
 	stdPackageListFile, err := os.Open(stdPackageListPath)

@@ -39,7 +39,7 @@ func stdlib(args []string) error {
 	if err := goenv.checkFlags(); err != nil {
 		return err
 	}
-	goroot := os.Getenv("GOROOT")
+	goroot := goenv.goroot
 	if goroot == "" {
 		return fmt.Errorf("GOROOT not set")
 	}
@@ -62,7 +62,7 @@ You may need to use the flags --cpu=x64_windows --compiler=mingw-gcc.`)
 	}
 
 	// Now switch to the newly created GOROOT
-	os.Setenv("GOROOT", output)
+	goenv.goroot = output
 
 	// Create a temporary cache directory. "go build" requires this starting
 	// in Go 1.12.
