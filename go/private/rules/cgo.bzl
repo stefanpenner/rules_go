@@ -23,6 +23,41 @@ load(
     "LINKMODE_NORMAL",
     "extldflags_from_cc_toolchain",
 )
+load(
+    "@bazel_skylib//lib:shell.bzl",
+    "shell",
+)
+load(
+    "@bazel_skylib//lib:types.bzl",
+    "types",
+)
+
+def clinkopts_map_each(opt):
+    if types.is_string(opt):
+        return shell.quote(opt) if " " in opt else opt
+    return _lib_to_clinkopts(opt)
+
+def _lib_to_clinkopts(lib):
+    # If both static and dynamic variants are available, Bazel will only give
+    # us the static variant. We'll get one file for each transitive dependency,
+    # so the same file may appear more than once.
+    if lib.basename.startswith("lib"):
+        if has_simple_shared_lib_extension(lib.basename):
+            # If the loader would be able to find the library using rpaths,
+            # use -L and -l instead of hard coding the path to the library in
+            # the binary. This gives users more flexibility. The linker will add
+            # rpaths later. We can't add them here because they are relative to
+            # the binary location, and we don't know where that is.
+            libname = lib.basename[len("lib"):lib.basename.rindex(".")]
+            return ["-L", lib.dirname, "-l", libname]
+
+        if get_versioned_shared_lib_extension(lib.basename).startswith("so"):
+            # With a versioned .so file, we must use the full filename,
+            # otherwise the library will not be found by the linker.
+            libname = ":%s" % lib.basename
+            return ["-L", lib.dirname, "-l", libname]
+
+    return lib.path
 
 def cgo_configure(go, srcs, cdeps, cppopts, copts, cxxopts, clinkopts):
     """cgo_configure returns the inputs and compile / link options
@@ -90,7 +125,7 @@ def cgo_configure(go, srcs, cdeps, cppopts, copts, cxxopts, clinkopts):
     inputs_direct = []
     inputs_transitive = []
     deps_direct = []
-    lib_opts = []
+    libs = []
     runfiles = go._ctx.runfiles(collect_data = True)
 
     # Always include the sandbox as part of the build. Bazel does this, but it
@@ -116,35 +151,13 @@ def cgo_configure(go, srcs, cdeps, cppopts, copts, cxxopts, clinkopts):
             for inc in cc_system_includes:
                 _include_unique(cppopts, "-isystem", inc, seen_system_includes)
             for lib in cc_libs:
-                # If both static and dynamic variants are available, Bazel will only give
-                # us the static variant. We'll get one file for each transitive dependency,
-                # so the same file may appear more than once.
-                if lib.basename.startswith("lib"):
-                    if has_simple_shared_lib_extension(lib.basename):
-                        # If the loader would be able to find the library using rpaths,
-                        # use -L and -l instead of hard coding the path to the library in
-                        # the binary. This gives users more flexibility. The linker will add
-                        # rpaths later. We can't add them here because they are relative to
-                        # the binary location, and we don't know where that is.
-                        libname = lib.basename[len("lib"):lib.basename.rindex(".")]
-                        clinkopts.extend(["-L", lib.dirname, "-l", libname])
-                        inputs_direct.append(lib)
-                        continue
-                    extension = get_versioned_shared_lib_extension(lib.basename)
-                    if extension.startswith("so"):
-                        # With a versioned .so file, we must use the full filename,
-                        # otherwise the library will not be found by the linker.
-                        libname = ":%s" % lib.basename
-                        clinkopts.extend(["-L", lib.dirname, "-l", libname])
-                        inputs_direct.append(lib)
-                        continue
-                    elif extension.startswith("dylib"):
-                        # A standard versioned dylib is named as libMagick.2.dylib, which is
-                        # treated as a simple shared library. Non-standard versioned dylibs such as
-                        # libclntsh.dylib.12.1, users have to create a unversioned symbolic link,
-                        # so it can be treated as a simple shared library too.
-                        continue
-                lib_opts.append(lib.path)
+                if lib.basename.startswith("lib") and get_versioned_shared_lib_extension(lib.basename).startswith("dylib"):
+                    # A standard versioned dylib is named as libMagick.2.dylib, which is
+                    # treated as a simple shared library. Non-standard versioned dylibs such as
+                    # libclntsh.dylib.12.1, users have to create a unversioned symbolic link,
+                    # so it can be treated as a simple shared library too.
+                    continue
+                libs.append(lib)
             clinkopts.extend(cc_link_flags)
 
         elif hasattr(d, "objc"):
@@ -162,6 +175,7 @@ def cgo_configure(go, srcs, cdeps, cppopts, copts, cxxopts, clinkopts):
         else:
             fail("unknown library has neither cc nor objc providers: %s" % d.label)
 
+    inputs_direct.extend(libs)
     inputs = depset(direct = inputs_direct, transitive = inputs_transitive)
     deps = depset(direct = deps_direct)
 
@@ -169,7 +183,7 @@ def cgo_configure(go, srcs, cdeps, cppopts, copts, cxxopts, clinkopts):
     # specified with -l flags) unless they appear after .o or .a files with
     # undefined symbols they provide. Put all the .a files from cdeps first,
     # so that we actually link with -lstdc++ and others.
-    clinkopts = lib_opts + clinkopts
+    clinkopts = libs + clinkopts
 
     return struct(
         inputs = inputs,

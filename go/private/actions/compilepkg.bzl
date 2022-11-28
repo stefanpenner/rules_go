@@ -13,6 +13,10 @@
 # limitations under the License.
 
 load(
+    "//go/private/rules:cgo.bzl",
+    "clinkopts_map_each",
+)
+load(
     "//go/private:mode.bzl",
     "link_mode_args",
 )
@@ -152,7 +156,7 @@ def emit_compilepkg(
         if objcxxopts:
             args.add("-objcxxflags", _quote_opts(objcxxopts))
         if clinkopts:
-            args.add("-ldflags", _quote_opts(clinkopts))
+            args.add_joined("-ldflags", clinkopts, map_each = clinkopts_map_each, join_with = " ")
 
     go.actions.run(
         inputs = inputs,

@@ -53,6 +53,8 @@ bzl_library(
     deps = [
         "//go/private:common",
         "//go/private:mode",
+        "@bazel_skylib//lib:shell",
+        "@bazel_skylib//lib:types",
     ],  # keep
 )
 
