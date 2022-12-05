@@ -158,7 +158,7 @@ def _builder_args(go, command = None):
     args.add_all([go.sdk_root], before_each = "-goroot", map_each = _dirname, expand_directories = False)
     args.add("-installsuffix", installsuffix(go.mode))
     args.add_joined("-tags", go.tags, join_with = ",")
-    return args
+    return args, [go.sdk.root_file, go.sdk_root]
 
 def _tool_args(go):
     args = go.actions.args()

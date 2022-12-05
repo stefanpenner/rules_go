@@ -95,7 +95,7 @@ def _go_test_impl(ctx):
         run_dir = pkg_dir(ctx.label.workspace_root, ctx.label.package)
 
     main_go = go.declare_file(go, path = "testmain.go")
-    arguments = go.builder_args(go, "gentestmain")
+    arguments, sdk_roots = go.builder_args(go, "gentestmain")
     arguments.add("-output", main_go)
     if go.coverage_enabled:
         if go.mode.race:
@@ -116,7 +116,7 @@ def _go_test_impl(ctx):
     arguments.add("-pkgname", internal_source.library.importpath)
     arguments.add_all(go_srcs, before_each = "-src", format_each = "l=%s")
     ctx.actions.run(
-        inputs = go_srcs,
+        inputs = go_srcs + sdk_roots,
         outputs = [main_go],
         mnemonic = "GoTestGenTest",
         executable = go.toolchain._builder,

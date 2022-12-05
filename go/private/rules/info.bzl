@@ -24,10 +24,10 @@ load(
 def _go_info_impl(ctx):
     go = go_context(ctx)
     report = go.declare_file(go, ext = ".txt")
-    args = go.builder_args(go)
+    args, sdk_roots = go.builder_args(go)
     args.add("-out", report)
     go.actions.run(
-        inputs = go.sdk_files,
+        inputs = go.sdk_files + sdk_roots,
         outputs = [report],
         mnemonic = "GoInfo",
         executable = ctx.executable._go_info,

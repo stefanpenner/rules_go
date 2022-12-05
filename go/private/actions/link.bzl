@@ -85,7 +85,7 @@ def emit_link(
     gc_linkopts = list(gc_linkopts)
     gc_linkopts.extend(go.mode.gc_linkopts)
     gc_linkopts, extldflags = _extract_extldflags(gc_linkopts, extldflags)
-    builder_args = go.builder_args(go, "link")
+    builder_args, sdk_roots = go.builder_args(go, "link")
     tool_args = go.tool_args(go)
 
     # Add in any mode specific behaviours
@@ -182,7 +182,7 @@ def emit_link(
         # that doesn't give useful information.
         builder_args.add("-conflict_err", conflict_err)
 
-    inputs_direct = stamp_inputs + [go.sdk.package_list]
+    inputs_direct = stamp_inputs + [go.sdk.package_list] + sdk_roots
     if go.coverage_enabled and go.coverdata:
         inputs_direct.append(go.coverdata.data.file)
     inputs_transitive = [

@@ -79,7 +79,8 @@ def emit_compilepkg(
     outputs = [out_lib, out_export]
     env = go.env
 
-    args = go.builder_args(go, "compilepkg")
+    args, sdk_roots = go.builder_args(go, "compilepkg")
+    inputs += sdk_roots
     args.add_all(sources, before_each = "-src")
     args.add_all(embedsrcs, before_each = "-embedsrc", expand_directories = False)
     args.add_all(
