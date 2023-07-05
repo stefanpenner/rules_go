@@ -262,7 +262,7 @@ def go_rules_dependencies(force = False):
             # releaser:patch-cmd gazelle -repo_root .
             Label("//third_party:go_googleapis-gazelle.patch"),
         ],
-        patch_args = ["-E", "-p1"],
+        patch_args = ["-p1"],
     )
 
     # releaser:upgrade-dep golang mock
