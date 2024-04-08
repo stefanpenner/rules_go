@@ -20,6 +20,7 @@ load(
     "//go/private:common.bzl",
     "GO_TOOLCHAIN",
     "GO_TOOLCHAIN_LABEL",
+    "SUPPORTS_PATH_MAPPING_REQUIREMENT",
     "as_list",
     "asm_exts",
     "cgo_exts",
@@ -94,7 +95,7 @@ def _go_test_impl(ctx):
         run_dir = repo_relative_rundir
 
     main_go = go.declare_file(go, path = "testmain.go")
-    arguments = go.builder_args(go, "gentestmain")
+    arguments = go.builder_args(go, "gentestmain", use_path_mapping = True)
     arguments.add("-output", main_go)
     if go.coverage_enabled:
         if go.mode.race:
@@ -114,6 +115,14 @@ def _go_test_impl(ctx):
     )
     arguments.add("-pkgname", internal_source.library.importpath)
     arguments.add_all(go_srcs, before_each = "-src", format_each = "l=%s")
+
+    # TODO: Remove this condition after https://github.com/bazelbuild/bazel/pull/21921.
+    if "local" in go._ctx.attr.tags:
+        env = go.env
+        execution_requirements = {}
+    else:
+        env = go.env_for_path_mapping
+        execution_requirements = SUPPORTS_PATH_MAPPING_REQUIREMENT
     ctx.actions.run(
         inputs = go_srcs,
         outputs = [main_go],
@@ -121,7 +130,8 @@ def _go_test_impl(ctx):
         executable = go.toolchain._builder,
         arguments = [arguments],
         toolchain = GO_TOOLCHAIN_LABEL,
-        env = go.env,
+        env = env,
+        execution_requirements = execution_requirements,
     )
 
     test_gc_linkopts = gc_linkopts(ctx)

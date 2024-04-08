@@ -262,3 +262,7 @@ _RULES_GO_RAW_REPO_NAME = str(Label("//:unused"))[:-len("//:unused")]
 # not start with a "@", so we need to add it.
 RULES_GO_REPO_NAME = _RULES_GO_RAW_REPO_NAME if _RULES_GO_RAW_REPO_NAME.startswith("@") else "@" + _RULES_GO_RAW_REPO_NAME
 RULES_GO_STDLIB_PREFIX = RULES_GO_REPO_NAME + "//stdlib:"
+
+# Marks an action as supporting path mapping (--experimental_output_paths=strip).
+# See https://www.youtube.com/watch?v=Et1rjb7ixUU for more details.
+SUPPORTS_PATH_MAPPING_REQUIREMENT = {"supports-path-mapping": "1"}
